@@ -1,9 +1,11 @@
 import slack
 import os
+import requests, json
+
 from pathlib import Path
 from dotenv import load_dotenv
 # Import Flask
-from flask import Flask
+from flask import Flask, request, Response
 # Handles events from Slack
 from slackeventsapi import SlackEventAdapter
 
@@ -20,14 +22,15 @@ slack_event_adapter = SlackEventAdapter(os.environ['SIGNING_SECRET'],'/slack/eve
 client = slack.WebClient(token=os.environ['SLACK_TOKEN'])
 
 # connect the bot to the channel in Slack Channel
-client.chat_postMessage(channel='#general', text='Bot Connected')
+# client.chat_postMessage(channel='#general', text='Bot Connected')
 
 # Get Bot ID
 BOT_ID = client.api_call("auth.test")['user_id']
 
-# @app.route('/')
-# def hello():
-#     return 'up'
+@app.route('/')
+def hello():
+    return 'up'
+
 
 
 # handling Message Events
@@ -39,6 +42,19 @@ def message(payload):
     text2 = event.get('text')
     if BOT_ID !=user_id:
         client.chat_postMessage(channel=channel_id, text=text2)
+
+@ app.route('/weather', methods=['POST'])
+def message_count():
+    data = request.form
+    channel_id = "#"+str(data.get('channel_name'))
+    city = data.get('text')
+    URL = "http://api.openweathermap.org/data/2.5/weather?q="+ city + "&&units=metric&&appid=b1670369ce3f1f0b71e762a85c4040d2"
+    returnData = city + " Weather: " + str(round(requests.get(URL).json()["main"]["temp"])) + " °C"
+    client.chat_postMessage(channel=channel_id, text=returnData)
+    return Response(), 200
+
+
+
 
 # Run the webserver micro-service
 if __name__ == "__main__":
